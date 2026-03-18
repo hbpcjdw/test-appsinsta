@@ -6,11 +6,23 @@ import SearchPage from '../views/SearchPage.vue';
 import AddPage from '../views/AddPage.vue';
 import ActivityPage from '../views/ActivityPage.vue';
 import ProfilePage from '../views/ProfilePage.vue';
+import LoginPage from '../views/LoginPage.vue';
+import RegisterPage from '../views/RegisterPage.vue';
 
 const routes: Array<RouteRecordRaw> = [
   {
     path: '/',
-    redirect: '/tabs/home'
+    redirect: '/login'
+  },
+  {
+    path: '/login',
+    name: 'Login',
+    component: LoginPage
+  },
+  {
+    path: '/register',
+    name: 'Register',
+    component: RegisterPage
   },
   {
     path: '/tabs',
