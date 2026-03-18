@@ -13,7 +13,7 @@ export const DUMMY_DATA = {
   stories: [
     { id: 1, name: 'Your Story', image: 'https://i.pravatar.cc/150?u=my' },
     { id: 2, name: 'herlambang', image: 'https://i.pravatar.cc/150?u=2' },
-    { id: 3, name: 'sevima_official', image: 'https://i.pravatar.cc/150?u=3' },
+    { id: 3, name: 'lalat_terbang', image: 'https://i.pravatar.cc/150?u=3' },
     { id: 4, name: 'dev_vue', image: 'https://i.pravatar.cc/150?u=4' },
   ],
   posts: [
