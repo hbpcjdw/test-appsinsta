@@ -100,6 +100,7 @@ import {
 } from '@ionic/vue';
 import { addCircleOutline, gridOutline, menuOutline, personOutline } from 'ionicons/icons';
 import { DUMMY_DATA } from '@/services/data';
+import { logout } from '@/services/auth';
 
 const router = useRouter();
 
@@ -136,9 +137,8 @@ const handleLogout = async () => {
       {
         text: 'Logout',
         role: 'destructive',
-        handler: () => {
-          localStorage.removeItem('authToken');
-          sessionStorage.clear();
+        handler: async () => {
+          await logout();
           router.replace('/login');
         },
       },

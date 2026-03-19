@@ -74,6 +74,7 @@ import {
   toastController
 } from '@ionic/vue';
 import { eyeOutline, eyeOffOutline, logoFacebook } from 'ionicons/icons';
+import { login } from '@/services/auth';
 
 const router = useRouter();
 const email = ref('');
@@ -81,19 +82,32 @@ const password = ref('');
 const showPassword = ref(false);
 
 const handleLogin = async () => {
-  // Validasi sederhana
   if (!email.value || !password.value) return;
 
-  // TODO: ganti dengan autentikasi nyata
-  const toast = await toastController.create({
-    message: 'Login berhasil!',
-    duration: 1500,
-    color: 'success',
-    position: 'bottom'
-  });
-  await toast.present();
+  try {
+    await login({
+      emailOrUsername: email.value,
+      password: password.value,
+    });
 
-  router.replace('/tabs/home');
+    const toast = await toastController.create({
+      message: 'Login berhasil!',
+      duration: 1500,
+      color: 'success',
+      position: 'bottom'
+    });
+    await toast.present();
+
+    router.replace('/tabs/home');
+  } catch (error) {
+    const toast = await toastController.create({
+      message: error instanceof Error ? error.message : 'Login gagal',
+      duration: 1800,
+      color: 'danger',
+      position: 'bottom'
+    });
+    await toast.present();
+  }
 };
 </script>
 

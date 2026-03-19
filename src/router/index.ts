@@ -8,6 +8,7 @@ import ActivityPage from '../views/ActivityPage.vue';
 import ProfilePage from '../views/ProfilePage.vue';
 import LoginPage from '../views/LoginPage.vue';
 import RegisterPage from '../views/RegisterPage.vue';
+import { isAuthenticated } from '@/services/auth';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -17,16 +18,19 @@ const routes: Array<RouteRecordRaw> = [
   {
     path: '/login',
     name: 'Login',
-    component: LoginPage
+    component: LoginPage,
+    meta: { guestOnly: true }
   },
   {
     path: '/register',
     name: 'Register',
-    component: RegisterPage
+    component: RegisterPage,
+    meta: { guestOnly: true }
   },
   {
     path: '/tabs',
     component: TabsPage,
+    meta: { requiresAuth: true },
     children: [
       {
         path: '',
@@ -65,5 +69,21 @@ const router = createRouter({
   history: createWebHistory(import.meta.env.BASE_URL),
   routes
 })
+
+router.beforeEach(async (to) => {
+  const loggedIn = await isAuthenticated();
+  const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
+  const guestOnly = to.matched.some((record) => record.meta.guestOnly);
+
+  if (requiresAuth && !loggedIn) {
+    return '/login';
+  }
+
+  if (guestOnly && loggedIn) {
+    return '/tabs/home';
+  }
+
+  return true;
+});
 
 export default router

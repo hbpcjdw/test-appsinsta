@@ -83,6 +83,7 @@ import {
   toastController
 } from '@ionic/vue';
 import { eyeOutline, eyeOffOutline } from 'ionicons/icons';
+import { register } from '@/services/auth';
 
 const router = useRouter();
 const email = ref('');
@@ -94,16 +95,32 @@ const showPassword = ref(false);
 const handleRegister = async () => {
   if (!email.value || !fullName.value || !username.value || !password.value) return;
 
-  // TODO: ganti dengan registrasi nyata
-  const toast = await toastController.create({
-    message: 'Akun berhasil dibuat!',
-    duration: 1500,
-    color: 'success',
-    position: 'bottom'
-  });
-  await toast.present();
+  try {
+    await register({
+      email: email.value,
+      fullName: fullName.value,
+      username: username.value,
+      password: password.value,
+    });
 
-  router.replace('/tabs/home');
+    const toast = await toastController.create({
+      message: 'Akun berhasil dibuat!',
+      duration: 1500,
+      color: 'success',
+      position: 'bottom'
+    });
+    await toast.present();
+
+    router.replace('/tabs/home');
+  } catch (error) {
+    const toast = await toastController.create({
+      message: error instanceof Error ? error.message : 'Registrasi gagal',
+      duration: 1800,
+      color: 'danger',
+      position: 'bottom'
+    });
+    await toast.present();
+  }
 };
 </script>
 
