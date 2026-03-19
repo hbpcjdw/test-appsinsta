@@ -47,6 +47,14 @@
         <ion-button expand="block" fill="outline" class="action-button secondary-button">
           Share profile
         </ion-button>
+        <ion-button
+          expand="block"
+          fill="outline"
+          class="action-button logout-button"
+          @click="handleLogout"
+        >
+          Logout
+        </ion-button>
       </section>
 
       <section class="highlights">
@@ -78,6 +86,7 @@
 
 <script setup lang="ts">
 import { computed } from 'vue';
+import { useRouter } from 'vue-router';
 import {
   IonPage,
   IonHeader,
@@ -87,9 +96,12 @@ import {
   IonButtons,
   IonButton,
   IonIcon,
+  alertController,
 } from '@ionic/vue';
 import { addCircleOutline, gridOutline, menuOutline, personOutline } from 'ionicons/icons';
 import { DUMMY_DATA } from '@/services/data';
+
+const router = useRouter();
 
 const profile = {
   username: 'herlambang_dev',
@@ -111,6 +123,30 @@ const highlights = [
 const profilePosts = computed(() =>
   DUMMY_DATA.posts.filter((post) => post.username === profile.username)
 );
+
+const handleLogout = async () => {
+  const alert = await alertController.create({
+    header: 'Logout',
+    message: 'Yakin ingin logout?',
+    buttons: [
+      {
+        text: 'Batal',
+        role: 'cancel',
+      },
+      {
+        text: 'Logout',
+        role: 'destructive',
+        handler: () => {
+          localStorage.removeItem('authToken');
+          sessionStorage.clear();
+          router.replace('/login');
+        },
+      },
+    ],
+  });
+
+  await alert.present();
+};
 </script>
 
 <style scoped>
@@ -192,6 +228,11 @@ const profilePosts = computed(() =>
   --color: #262626;
   font-weight: 600;
   min-height: 36px;
+}
+
+.logout-button {
+  grid-column: 1 / -1;
+  --color: #d93025;
 }
 
 .secondary-button {
