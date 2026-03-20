@@ -30,12 +30,11 @@ import { IonPage, IonHeader, IonToolbar, IonTitle, IonContent, IonButtons, IonBu
 import { addCircleOutline, paperPlaneOutline } from 'ionicons/icons';
 import StoryBar from '@/components/StoryBar.vue';
 import PostCard from '@/components/PostCard.vue';
-import { DUMMY_DATA } from '@/services/data';
+import { posts, DUMMY_DATA } from '@/services/data';
 
 defineOptions({ name: 'HomePage' });
 
 const stories = ref(DUMMY_DATA.stories);
-const posts = ref(DUMMY_DATA.posts);
 const isLoading = ref(true);
 
 onMounted(() => {

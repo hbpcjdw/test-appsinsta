@@ -1,3 +1,5 @@
+import { ref } from 'vue';
+
 export interface Post {
   id: number;
   username: string;
@@ -9,33 +11,76 @@ export interface Post {
   hasLiked: boolean;
 }
 
+export type Story = {
+  id: number;
+  name: string;
+  image: string;
+};
+
+export type CreatePostPayload = {
+  caption: string;
+  postImage?: string;
+  username?: string;
+  userImage?: string;
+  location?: string;
+};
+
+const stories: Story[] = [
+  { id: 1, name: 'Your Story', image: 'https://i.pravatar.cc/150?u=my' },
+  { id: 2, name: 'herlambang', image: 'https://i.pravatar.cc/150?u=2' },
+  { id: 3, name: 'lalat_terbang', image: 'https://i.pravatar.cc/150?u=3' },
+  { id: 4, name: 'dev_vue', image: 'https://i.pravatar.cc/150?u=4' },
+];
+
+const initialPosts: Post[] = [
+  {
+    id: 101,
+    username: 'herlambang_dev',
+    userImage: 'https://i.pravatar.cc/150?u=2',
+    location: 'Jakarta, Indonesia',
+    postImage: 'https://picsum.photos/id/20/800/800',
+    caption: 'Slicing UI InstaApp dengan Ionic Vue dalam 3 jam! 🚀 #coding #vuejs',
+    likes: 1250,
+    hasLiked: false,
+  },
+  {
+    id: 102,
+    username: 'lalat_terbang',
+    userImage: 'https://i.pravatar.cc/150?u=3',
+    location: 'Surabaya, Indonesia',
+    postImage: 'https://picsum.photos/id/30/800/800',
+    caption: 'semangggat buat semua yayayayayayyaya',
+    likes: 890,
+    hasLiked: true,
+  },
+];
+
+export const posts = ref<Post[]>([...initialPosts]);
+
+export const addPost = (payload: CreatePostPayload): Post => {
+  const caption = payload.caption.trim();
+  const postImage = payload.postImage?.trim() || '';
+
+  if (!caption && !postImage) {
+    throw new Error('Isi caption atau pilih gambar terlebih dahulu');
+  }
+
+  const newPost: Post = {
+    id: Date.now(),
+    username: payload.username?.trim() || 'you',
+    userImage: payload.userImage?.trim() || 'https://i.pravatar.cc/150?u=my',
+    location: payload.location?.trim() || 'Indonesia',
+    postImage,
+    caption,
+    likes: 0,
+    hasLiked: false,
+  };
+
+  posts.value = [newPost, ...posts.value];
+  return newPost;
+};
+
 export const DUMMY_DATA = {
-  stories: [
-    { id: 1, name: 'Your Story', image: 'https://i.pravatar.cc/150?u=my' },
-    { id: 2, name: 'herlambang', image: 'https://i.pravatar.cc/150?u=2' },
-    { id: 3, name: 'lalat_terbang', image: 'https://i.pravatar.cc/150?u=3' },
-    { id: 4, name: 'dev_vue', image: 'https://i.pravatar.cc/150?u=4' },
-  ],
-  posts: [
-    {
-      id: 101,
-      username: 'herlambang_dev',
-      userImage: 'https://i.pravatar.cc/150?u=2',
-      location: 'Jakarta, Indonesia',
-      postImage: 'https://picsum.photos/id/20/800/800',
-      caption: 'Slicing UI InstaApp dengan Ionic Vue dalam 3 jam! 🚀 #coding #vuejs',
-      likes: 1250,
-      hasLiked: false
-    },
-    {
-      id: 102,
-      username: 'lalat_terbang',
-      userImage: 'https://i.pravatar.cc/150?u=3',
-      location: 'Surabaya, Indonesia',
-      postImage: 'https://picsum.photos/id/30/800/800',
-      caption: 'semangggat buat semua yayayayayayyaya',
-      likes: 890,
-      hasLiked: true
-    }
-  ]
+  stories,
+  posts,
 };

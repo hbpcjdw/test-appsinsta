@@ -16,7 +16,12 @@
 
     <ion-content>
       <section class="profile-header">
-        <img class="avatar" :src="profile.image" :alt="profile.name" />
+        <img
+          class="avatar"
+          :src="avatarSrc"
+          :alt="profile.name"
+          @error="onAvatarError"
+        />
 
         <div class="stats-row">
           <div class="stat-item">
@@ -77,7 +82,11 @@
 
       <section class="posts-grid">
         <div v-for="post in profilePosts" :key="post.id" class="post-tile">
-          <img :src="post.postImage" :alt="post.caption" />
+          <img
+            :src="getPostImageSrc(post.id, post.postImage)"
+            :alt="post.caption"
+            @error="onPostImageError"
+          />
         </div>
       </section>
     </ion-content>
@@ -85,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed } from 'vue';
+import { computed, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage,
@@ -107,11 +116,38 @@ const router = useRouter();
 const profile = {
   username: 'herlambang_dev',
   name: 'Herlambang Developer',
-  image: 'https://i.pravatar.cc/300?u=herlambang_dev',
+  image: '',
   bio: 'Mobile developer. Ionic Vue enthusiast. Building UI that feels fast and clean.',
   link: 'herlambang.dev',
   followers: '12.4K',
   following: 312,
+};
+
+const randomDummyAvatar = ref(
+  `https://i.pravatar.cc/300?img=${Math.floor(Math.random() * 70) + 1}`
+);
+
+const avatarSrc = computed(() => profile.image?.trim() || randomDummyAvatar.value);
+
+const onAvatarError = (event: Event) => {
+  const image = event.target as HTMLImageElement;
+  image.src = randomDummyAvatar.value;
+};
+
+const getRandomPostImage = (seed: number | string) =>
+  `https://picsum.photos/seed/${seed}/600/600`;
+
+const getPostImageSrc = (postId: number, postImage: string) =>
+  postImage?.trim() || getRandomPostImage(`post-${postId}`);
+
+const onPostImageError = (event: Event) => {
+  const image = event.target as HTMLImageElement;
+  if (image.dataset.fallbackApplied === 'true') {
+    return;
+  }
+
+  image.dataset.fallbackApplied = 'true';
+  image.src = getRandomPostImage(`fallback-${Date.now()}`);
 };
 
 const highlights = [
@@ -122,7 +158,7 @@ const highlights = [
 ];
 
 const profilePosts = computed(() =>
-  DUMMY_DATA.posts.filter((post) => post.username === profile.username)
+  DUMMY_DATA.posts.value.filter((post) => post.username === profile.username)
 );
 
 const handleLogout = async () => {

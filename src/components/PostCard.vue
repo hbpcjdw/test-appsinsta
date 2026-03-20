@@ -1,7 +1,9 @@
 <template>
   <div class="post-card">
     <ion-item lines="none">
-      <ion-avatar slot="start"><img :src="post.userImage" /></ion-avatar>
+      <ion-avatar slot="start">
+        <img :src="avatarSrc" @error="onAvatarError" />
+      </ion-avatar>
       <ion-label>
         <h3 class="username">{{ post.username }}</h3>
         <p class="location">{{ post.location }}</p>
@@ -12,7 +14,7 @@
     </ion-item>
 
     <div class="image-container" @dblclick="handleLike">
-      <img :src="post.postImage" />
+      <img :src="postImageSrc" @error="onPostImageError" />
     </div>
 
     <div class="actions">
@@ -31,7 +33,7 @@
 </template>
 
 <script setup lang="ts">
-import { ref, watch } from 'vue';
+import { computed, ref, watch } from 'vue';
 import { IonItem, IonAvatar, IonLabel, IonButton, IonIcon } from '@ionic/vue';
 import { ellipsisHorizontal, heartOutline, heart, chatbubbleOutline, paperPlaneOutline } from 'ionicons/icons';
 
@@ -39,6 +41,14 @@ const props = defineProps<{ post: any }>();
 
 const hasLiked = ref(props.post.hasLiked);
 const likes = ref(props.post.likes);
+const fallbackAvatar = ref(`https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70) + 1}`);
+
+const getRandomPostImage = (seed: number | string) => `https://picsum.photos/seed/${seed}/800/800`;
+
+const avatarSrc = computed(() => props.post.userImage?.trim() || fallbackAvatar.value);
+const postImageSrc = computed(() =>
+  props.post.postImage?.trim() || getRandomPostImage(`home-post-${props.post.id}`)
+);
 
 watch(
   () => [props.post.hasLiked, props.post.likes],
@@ -52,6 +62,21 @@ const handleLike = () => {
   // Simple logic: Toggle status lokal
   hasLiked.value = !hasLiked.value;
   hasLiked.value ? likes.value++ : likes.value--;
+};
+
+const onAvatarError = (event: Event) => {
+  const image = event.target as HTMLImageElement;
+  image.src = fallbackAvatar.value;
+};
+
+const onPostImageError = (event: Event) => {
+  const image = event.target as HTMLImageElement;
+  if (image.dataset.fallbackApplied === 'true') {
+    return;
+  }
+
+  image.dataset.fallbackApplied = 'true';
+  image.src = getRandomPostImage(`fallback-${props.post.id}-${Date.now()}`);
 };
 </script>
 

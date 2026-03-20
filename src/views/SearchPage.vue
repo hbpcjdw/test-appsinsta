@@ -138,7 +138,7 @@ const filteredAccounts = computed(() => {
 });
 
 const explorePosts = computed(() => {
-  const basePosts = DUMMY_DATA.posts.map((post, index) => ({
+  const basePosts = DUMMY_DATA.posts.value.map((post, index) => ({
     ...post,
     comments: 24 + index * 17,
     featured: index % 3 === 1,
