@@ -40,3 +40,17 @@ const app = createApp(App)
 router.isReady().then(() => {
   app.mount('#app');
 });
+
+// Register Service Worker untuk offline image caching
+if ('serviceWorker' in navigator) {
+  window.addEventListener('load', () => {
+    navigator.serviceWorker
+      .register('/service-worker.js')
+      .then((registration) => {
+        console.log('Service Worker registered:', registration);
+      })
+      .catch((error) => {
+        console.log('Service Worker registration failed:', error);
+      });
+  });
+}
