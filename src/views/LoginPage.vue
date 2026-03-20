@@ -36,10 +36,10 @@
           <ion-button
             expand="block"
             class="login-btn"
-            :disabled="!email || !password"
+            :disabled="!email || !password || isLoading"
             @click="handleLogin"
           >
-            Masuk
+            {{ isLoading ? 'Memproses...' : 'Masuk' }}
           </ion-button>
 
           <div class="divider">
@@ -71,7 +71,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage, IonContent, IonInput, IonButton, IonIcon,
-  toastController
+  loadingController, alertController
 } from '@ionic/vue';
 import { eyeOutline, eyeOffOutline, logoFacebook } from 'ionicons/icons';
 import { login } from '@/services/auth';
@@ -80,33 +80,53 @@ const router = useRouter();
 const email = ref('');
 const password = ref('');
 const showPassword = ref(false);
+const isLoading = ref(false);
+
+const showAlert = async (header: string, message: string) => {
+  const alert = await alertController.create({
+    header,
+    message,
+    buttons: ['OK'],
+  });
+  await alert.present();
+};
 
 const handleLogin = async () => {
-  if (!email.value || !password.value) return;
+  // console.log('Login clicked');
+  if (!email.value || !password.value || isLoading.value) return;
+
+  isLoading.value = true;
+  const loading = await loadingController.create({
+    message: 'Sedang login...',
+    spinner: 'crescent',
+  });
+  await loading.present();
+
+  let isSuccess = false;
+  let alertHeader = '';
+  let alertMessage = '';
 
   try {
     await login({
-      email: email.value,
+      email: email.value.trim(),
       password: password.value,
     });
 
-    const toast = await toastController.create({
-      message: 'Login berhasil!',
-      duration: 1500,
-      color: 'success',
-      position: 'bottom'
-    });
-    await toast.present();
-
-    router.replace('/tabs/home');
+    isSuccess = true;
+    alertHeader = 'Berhasil';
+    alertMessage = 'Login berhasil';
   } catch (error) {
-    const toast = await toastController.create({
-      message: error instanceof Error ? error.message : 'Login gagal',
-      duration: 1800,
-      color: 'danger',
-      position: 'bottom'
-    });
-    await toast.present();
+    alertHeader = 'Gagal';
+    alertMessage = error instanceof Error ? error.message : 'Login gagal';
+  } finally {
+    isLoading.value = false;
+    await loading.dismiss();
+  }
+
+  await showAlert(alertHeader, alertMessage);
+
+  if (isSuccess) {
+    router.replace('/tabs/home');
   }
 };
 </script>

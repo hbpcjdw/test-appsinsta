@@ -56,10 +56,10 @@
           <ion-button
             expand="block"
             class="register-btn"
-            :disabled="!email || !fullName || !username || !password"
+            :disabled="!email || !fullName || !username || !password || isLoading"
             @click="handleRegister"
           >
-            Daftar
+            {{ isLoading ? 'Memproses...' : 'Daftar' }}
           </ion-button>
         </div>
       </div>
@@ -80,7 +80,7 @@ import { ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage, IonContent, IonInput, IonButton, IonIcon,
-  toastController
+  loadingController, alertController
 } from '@ionic/vue';
 import { eyeOutline, eyeOffOutline } from 'ionicons/icons';
 import { register } from '@/services/auth';
@@ -91,35 +91,54 @@ const fullName = ref('');
 const username = ref('');
 const password = ref('');
 const showPassword = ref(false);
+const isLoading = ref(false);
+
+const showAlert = async (header: string, message: string) => {
+  const alert = await alertController.create({
+    header,
+    message,
+    buttons: ['OK'],
+  });
+  await alert.present();
+};
 
 const handleRegister = async () => {
-  if (!email.value || !fullName.value || !username.value || !password.value) return;
+  if (!email.value || !fullName.value || !username.value || !password.value || isLoading.value) return;
+
+  isLoading.value = true;
+  const loading = await loadingController.create({
+    message: 'Mendaftarkan akun...',
+    spinner: 'crescent',
+  });
+  await loading.present();
+
+  let isSuccess = false;
+  let alertHeader = '';
+  let alertMessage = '';
 
   try {
     await register({
-      email: email.value,
-      fullName: fullName.value,
-      username: username.value,
+      email: email.value.trim(),
+      fullName: fullName.value.trim(),
+      username: username.value.trim(),
       password: password.value,
     });
 
-    const toast = await toastController.create({
-      message: 'Akun berhasil dibuat!',
-      duration: 1500,
-      color: 'success',
-      position: 'bottom'
-    });
-    await toast.present();
-
-    router.replace('/tabs/home');
+    isSuccess = true;
+    alertHeader = 'Berhasil';
+    alertMessage = 'Registrasi berhasil. Silakan login.';
   } catch (error) {
-    const toast = await toastController.create({
-      message: error instanceof Error ? error.message : 'Registrasi gagal',
-      duration: 1800,
-      color: 'danger',
-      position: 'bottom'
-    });
-    await toast.present();
+    alertHeader = 'Gagal';
+    alertMessage = error instanceof Error ? error.message : 'Registrasi gagal';
+  } finally {
+    isLoading.value = false;
+    await loading.dismiss();
+  }
+
+  await showAlert(alertHeader, alertMessage);
+
+  if (isSuccess) {
+    router.replace('/login');
   }
 };
 </script>

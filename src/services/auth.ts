@@ -5,7 +5,6 @@ import {
   signInWithEmailAndPassword,
   signOut,
   onAuthStateChanged,
-  Auth,
   User,
 } from 'firebase/auth';
 import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
@@ -85,24 +84,24 @@ export const register = async (
   payload: RegisterPayload
 ): Promise<{ user: AuthUser }> => {
   try {
-    // Create user with Firebase Authentication
     const userCredential = await createUserWithEmailAndPassword(
       auth,
       payload.email.trim(),
       payload.password
     );
 
-    // Create user profile in Firestore
-    await createUserProfile(userCredential.user, payload);
+    // await createUserProfile(userCredential.user, payload);
 
-    const authUser: AuthUser = {
-      id: userCredential.user.uid,
-      email: userCredential.user.email || '',
-      fullName: payload.fullName,
-      username: payload.username.toLowerCase(),
-    };
+    // const authUser: AuthUser = {
+    //   id: userCredential.user.uid,
+    //   email: userCredential.user.email || '',
+    //   fullName: payload.fullName,
+    //   username: payload.username.toLowerCase(),
+    // };
 
-    return { user: authUser };
+    await signOut(auth);
+
+    // return { user: authUser };
   } catch (error: any) {
     const errorCode = error.code;
     let errorMessage = 'Pendaftaran gagal';
