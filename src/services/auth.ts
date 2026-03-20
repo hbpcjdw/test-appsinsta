@@ -128,12 +128,12 @@ export const login = async (
       payload.password
     );
 
-    const userProfile = await getUserProfile(userCredential.user.uid);
-    if (!userProfile) {
-      throw new Error('Profil pengguna tidak ditemukan');
-    }
+    // const userProfile = await getUserProfile(userCredential.user.uid);
+    // if (!userProfile) {
+    //   throw new Error('Profil pengguna tidak ditemukan');
+    // }
 
-    return { user: userProfile };
+    // return { user: userProfile };
   } catch (error: any) {
     const errorCode = error.code;
     let errorMessage = 'Login gagal';
