@@ -1,24 +1,29 @@
-import { Preferences } from '@capacitor/preferences';
+import { initializeApp } from 'firebase/app';
+import {
+  getAuth,
+  createUserWithEmailAndPassword,
+  signInWithEmailAndPassword,
+  signOut,
+  onAuthStateChanged,
+  Auth,
+  User,
+} from 'firebase/auth';
+import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 
-const TOKEN_KEY = 'auth.jwt';
-const USER_KEY = 'auth.user';
-const USERS_KEY = 'auth.users';
-
-type JwtPayload = {
-  sub: string;
-  email: string;
-  username: string;
-  exp: number;
-  iat: number;
+// Firebase configuration
+const firebaseConfig = {
+  apiKey: import.meta.env.VITE_FIREBASE_API_KEY,
+  authDomain: import.meta.env.VITE_FIREBASE_AUTH_DOMAIN,
+  projectId: import.meta.env.VITE_FIREBASE_PROJECT_ID,
+  storageBucket: import.meta.env.VITE_FIREBASE_STORAGE_BUCKET,
+  messagingSenderId: import.meta.env.VITE_FIREBASE_MESSAGING_SENDER_ID,
+  appId: import.meta.env.VITE_FIREBASE_APP_ID,
 };
 
-type StoredUser = {
-  id: string;
-  email: string;
-  fullName: string;
-  username: string;
-  password: string;
-};
+// Initialize Firebase
+const app = initializeApp(firebaseConfig);
+export const auth = getAuth(app);
+export const db = getFirestore(app);
 
 export type AuthUser = {
   id: string;
@@ -35,180 +40,135 @@ export type RegisterPayload = {
 };
 
 export type LoginPayload = {
-  emailOrUsername: string;
+  email: string;
   password: string;
 };
 
-const encodeBase64Url = (value: object): string => {
-  const encoded = btoa(JSON.stringify(value));
-  return encoded.replace(/\+/g, '-').replace(/\//g, '_').replace(/=+$/g, '');
-};
-
-const decodeBase64Url = (value: string): string => {
-  const base64 = value.replace(/-/g, '+').replace(/_/g, '/');
-  const padding = '='.repeat((4 - (base64.length % 4)) % 4);
-  return atob(base64 + padding);
-};
-
-const toAuthUser = (user: StoredUser): AuthUser => ({
-  id: user.id,
-  email: user.email,
-  fullName: user.fullName,
-  username: user.username,
-});
-
-const nowInSeconds = (): number => Math.floor(Date.now() / 1000);
-
-const createMockJwt = (user: StoredUser): string => {
-  const header = {
-    alg: 'HS256',
-    typ: 'JWT',
-  };
-
-  const payload: JwtPayload = {
-    sub: user.id,
+// Create user profile in Firestore
+const createUserProfile = async (
+  user: User,
+  payload: RegisterPayload
+): Promise<void> => {
+  const userRef = doc(db, 'users', user.uid);
+  await setDoc(userRef, {
+    uid: user.uid,
     email: user.email,
-    username: user.username,
-    iat: nowInSeconds(),
-    exp: nowInSeconds() + 60 * 60 * 24,
-  };
-
-  const signature = encodeBase64Url({ sig: `${user.id}-${payload.iat}` });
-  return `${encodeBase64Url(header)}.${encodeBase64Url(payload)}.${signature}`;
+    fullName: payload.fullName,
+    username: payload.username.toLowerCase(),
+    createdAt: new Date(),
+  });
 };
 
-const parseJwtPayload = (token: string): JwtPayload | null => {
+// Get user profile from Firestore
+const getUserProfile = async (uid: string): Promise<AuthUser | null> => {
   try {
-    const [, payloadToken] = token.split('.');
-    if (!payloadToken) {
-      return null;
-    }
+    const userRef = doc(db, 'users', uid);
+    const userSnap = await getDoc(userRef);
 
-    return JSON.parse(decodeBase64Url(payloadToken)) as JwtPayload;
-  } catch {
+    if (userSnap.exists()) {
+      const data = userSnap.data();
+      return {
+        id: uid,
+        email: data.email,
+        fullName: data.fullName,
+        username: data.username,
+      };
+    }
+    return null;
+  } catch (error) {
+    console.error('Error fetching user profile:', error);
     return null;
   }
-};
-
-const readUsers = async (): Promise<StoredUser[]> => {
-  const result = await Preferences.get({ key: USERS_KEY });
-  if (!result.value) {
-    return [];
-  }
-
-  try {
-    return JSON.parse(result.value) as StoredUser[];
-  } catch {
-    return [];
-  }
-};
-
-const writeUsers = async (users: StoredUser[]): Promise<void> => {
-  await Preferences.set({ key: USERS_KEY, value: JSON.stringify(users) });
-};
-
-const writeSession = async (token: string, user: AuthUser): Promise<void> => {
-  await Preferences.set({ key: TOKEN_KEY, value: token });
-  await Preferences.set({ key: USER_KEY, value: JSON.stringify(user) });
 };
 
 export const register = async (
   payload: RegisterPayload
-): Promise<{ token: string; user: AuthUser }> => {
-  const normalizedEmail = payload.email.trim().toLowerCase();
-  const normalizedUsername = payload.username.trim().toLowerCase();
-  const users = await readUsers();
+): Promise<{ user: AuthUser }> => {
+  try {
+    // Create user with Firebase Authentication
+    const userCredential = await createUserWithEmailAndPassword(
+      auth,
+      payload.email.trim(),
+      payload.password
+    );
 
-  const duplicate = users.find(
-    (user) =>
-      user.email.toLowerCase() === normalizedEmail ||
-      user.username.toLowerCase() === normalizedUsername
-  );
+    // Create user profile in Firestore
+    await createUserProfile(userCredential.user, payload);
 
-  if (duplicate) {
-    throw new Error('Email atau username sudah terdaftar');
+    const authUser: AuthUser = {
+      id: userCredential.user.uid,
+      email: userCredential.user.email || '',
+      fullName: payload.fullName,
+      username: payload.username.toLowerCase(),
+    };
+
+    return { user: authUser };
+  } catch (error: any) {
+    const errorCode = error.code;
+    let errorMessage = 'Pendaftaran gagal';
+
+    if (errorCode === 'auth/email-already-in-use') {
+      errorMessage = 'Email sudah terdaftar';
+    } else if (errorCode === 'auth/weak-password') {
+      errorMessage = 'Password terlalu lemah';
+    } else if (errorCode === 'auth/invalid-email') {
+      errorMessage = 'Email tidak valid';
+    }
+
+    throw new Error(errorMessage);
   }
-
-  const newUser: StoredUser = {
-    id: `${Date.now()}`,
-    email: normalizedEmail,
-    fullName: payload.fullName.trim(),
-    username: normalizedUsername,
-    password: payload.password,
-  };
-
-  const token = createMockJwt(newUser);
-  const authUser = toAuthUser(newUser);
-
-  await writeUsers([newUser, ...users]);
-  await writeSession(token, authUser);
-
-  return { token, user: authUser };
 };
 
 export const login = async (
   payload: LoginPayload
-): Promise<{ token: string; user: AuthUser }> => {
-  const credential = payload.emailOrUsername.trim().toLowerCase();
-  const users = await readUsers();
+): Promise<{ user: AuthUser }> => {
+  try {
+    const userCredential = await signInWithEmailAndPassword(
+      auth,
+      payload.email.trim(),
+      payload.password
+    );
 
-  const foundUser = users.find(
-    (user) =>
-      user.email.toLowerCase() === credential ||
-      user.username.toLowerCase() === credential
-  );
+    const userProfile = await getUserProfile(userCredential.user.uid);
+    if (!userProfile) {
+      throw new Error('Profil pengguna tidak ditemukan');
+    }
 
-  if (!foundUser || foundUser.password !== payload.password) {
-    throw new Error('Email/username atau kata sandi tidak valid');
+    return { user: userProfile };
+  } catch (error: any) {
+    const errorCode = error.code;
+    let errorMessage = 'Login gagal';
+
+    if (errorCode === 'auth/user-not-found') {
+      errorMessage = 'Email tidak terdaftar';
+    } else if (errorCode === 'auth/wrong-password') {
+      errorMessage = 'Password tidak valid';
+    } else if (errorCode === 'auth/invalid-email') {
+      errorMessage = 'Email tidak valid';
+    }
+
+    throw new Error(errorMessage);
   }
-
-  const token = createMockJwt(foundUser);
-  const authUser = toAuthUser(foundUser);
-
-  await writeSession(token, authUser);
-
-  return { token, user: authUser };
-};
-
-export const getToken = async (): Promise<string | null> => {
-  const result = await Preferences.get({ key: TOKEN_KEY });
-  return result.value;
 };
 
 export const getCurrentUser = async (): Promise<AuthUser | null> => {
-  const result = await Preferences.get({ key: USER_KEY });
-  if (!result.value) {
+  const user = auth.currentUser;
+  if (!user) {
     return null;
   }
 
-  try {
-    return JSON.parse(result.value) as AuthUser;
-  } catch {
-    return null;
-  }
+  return getUserProfile(user.uid);
 };
 
 export const logout = async (): Promise<void> => {
-  await Preferences.remove({ key: TOKEN_KEY });
-  await Preferences.remove({ key: USER_KEY });
+  await signOut(auth);
 };
 
 export const isAuthenticated = async (): Promise<boolean> => {
-  const token = await getToken();
-  if (!token) {
-    return false;
-  }
-
-  const payload = parseJwtPayload(token);
-  if (!payload) {
-    await logout();
-    return false;
-  }
-
-  if (payload.exp <= nowInSeconds()) {
-    await logout();
-    return false;
-  }
-
-  return true;
+  return new Promise((resolve) => {
+    const unsubscribe = onAuthStateChanged(auth, (user) => {
+      unsubscribe();
+      resolve(!!user);
+    });
+  });
 };

@@ -86,7 +86,7 @@ const handleLogin = async () => {
 
   try {
     await login({
-      emailOrUsername: email.value,
+      email: email.value,
       password: password.value,
     });
 

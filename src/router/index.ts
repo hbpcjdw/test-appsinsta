@@ -8,7 +8,8 @@ import ActivityPage from '../views/ActivityPage.vue';
 import ProfilePage from '../views/ProfilePage.vue';
 import LoginPage from '../views/LoginPage.vue';
 import RegisterPage from '../views/RegisterPage.vue';
-import { isAuthenticated } from '@/services/auth';
+import { auth } from '@/services/auth';
+import { onAuthStateChanged } from 'firebase/auth';
 
 const routes: Array<RouteRecordRaw> = [
   {
@@ -70,20 +71,22 @@ const router = createRouter({
   routes
 })
 
-router.beforeEach(async (to) => {
-  const loggedIn = await isAuthenticated();
+router.beforeEach((to, from, next) => {
   const requiresAuth = to.matched.some((record) => record.meta.requiresAuth);
   const guestOnly = to.matched.some((record) => record.meta.guestOnly);
 
-  if (requiresAuth && !loggedIn) {
-    return '/login';
-  }
+  const unsubscribe = onAuthStateChanged(auth, (user) => {
+    unsubscribe();
+    const loggedIn = !!user;
 
-  if (guestOnly && loggedIn) {
-    return '/tabs/home';
-  }
-
-  return true;
+    if (requiresAuth && !loggedIn) {
+      next('/login');
+    } else if (guestOnly && loggedIn) {
+      next('/tabs/home');
+    } else {
+      next(true);
+    }
+  });
 });
 
 export default router
