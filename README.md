@@ -58,7 +58,8 @@ npm run build
 
 Untuk test di device/emulator:
 ```bash
-ionic capacitor run android
-ionic capacitor run ios
+npx cap add android
+npx cap sync android
+npx cap open android
 ```
 
