@@ -2,7 +2,7 @@
   <ion-page>
     <ion-header class="ion-no-border">
       <ion-toolbar>
-        <ion-title class="profile-title">herlambang_dev</ion-title>
+        <ion-title class="profile-title">{{ profile.username }}</ion-title>
         <ion-buttons slot="end">
           <ion-button>
             <ion-icon :icon="addCircleOutline" />
@@ -19,7 +19,7 @@
         <img
           class="avatar"
           :src="avatarSrc"
-          :alt="profile.name"
+          :alt="profile.fullName"
           @error="onAvatarError"
         />
 
@@ -40,7 +40,7 @@
       </section>
 
       <section class="profile-meta">
-        <h2>{{ profile.name }}</h2>
+        <h2>{{ profile.fullName }}</h2>
         <p class="bio">{{ profile.bio }}</p>
         <p class="link">{{ profile.link }}</p>
       </section>
@@ -85,7 +85,7 @@
           <img
             :src="getPostImageSrc(post.id, post.postImage)"
             :alt="post.caption"
-            @error="onPostImageError"
+            @error="onPostImageError($event, post.id)"
           />
         </div>
       </section>
@@ -94,7 +94,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref, watch } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage,
@@ -109,45 +109,41 @@ import {
 } from '@ionic/vue';
 import { addCircleOutline, gridOutline, menuOutline, personOutline } from 'ionicons/icons';
 import { DUMMY_DATA } from '@/services/data';
-import { logout } from '@/services/auth';
+import { getCurrentUser, mappedUser, logout, type AuthUser } from '@/services/auth';
+import { getDeterministicAvatar, getDeterministicPostImage } from '@/services/avatar';
 
 const router = useRouter();
 
-const profile = {
+const profile = ref({
   username: 'herlambang_dev',
-  name: 'Herlambang Developer',
+  fullName: 'Herlambang Developer',
   image: '',
   bio: 'Mobile developer. Ionic Vue enthusiast. Building UI that feels fast and clean.',
   link: 'herlambang.dev',
   followers: '12.4K',
   following: 312,
-};
+});
 
-const randomDummyAvatar = ref(
-  `https://i.pravatar.cc/300?img=${Math.floor(Math.random() * 70) + 1}`
+const avatarSrc = computed(() =>
+  profile.value.image?.trim() || getDeterministicAvatar(profile.value.username, 300)
 );
-
-const avatarSrc = computed(() => profile.image?.trim() || randomDummyAvatar.value);
 
 const onAvatarError = (event: Event) => {
   const image = event.target as HTMLImageElement;
-  image.src = randomDummyAvatar.value;
+  image.src = getDeterministicAvatar(profile.value.username, 300);
 };
 
-const getRandomPostImage = (seed: number | string) =>
-  `https://picsum.photos/seed/${seed}/600/600`;
-
 const getPostImageSrc = (postId: number, postImage: string) =>
-  postImage?.trim() || getRandomPostImage(`post-${postId}`);
+  postImage?.trim() || getDeterministicPostImage(`post-${postId}`);
 
-const onPostImageError = (event: Event) => {
+const onPostImageError = (event: Event, postId: number) => {
   const image = event.target as HTMLImageElement;
   if (image.dataset.fallbackApplied === 'true') {
     return;
   }
 
   image.dataset.fallbackApplied = 'true';
-  image.src = getRandomPostImage(`fallback-${Date.now()}`);
+  image.src = getDeterministicPostImage(`post-${postId}`);
 };
 
 const highlights = [
@@ -158,7 +154,36 @@ const highlights = [
 ];
 
 const profilePosts = computed(() =>
-  DUMMY_DATA.posts.value.filter((post) => post.username === profile.username)
+  DUMMY_DATA.posts.value.filter((post) => post.username === profile.value.username)
+);
+
+const syncProfileFromAuth = (authUser: AuthUser) => {
+  profile.value = {
+    ...profile.value,
+    username: authUser.username,
+    fullName: authUser.fullName,
+  };
+};
+
+onMounted(async () => {
+  const currentUser = mappedUser.value || (await getCurrentUser());
+  if (!currentUser) {
+    return;
+  }
+
+  syncProfileFromAuth(currentUser as AuthUser);
+});
+
+watch(
+  mappedUser,
+  (nextUser) => {
+    if (!nextUser) {
+      return;
+    }
+
+    syncProfileFromAuth(nextUser);
+  },
+  { immediate: true }
 );
 
 const handleLogout = async () => {

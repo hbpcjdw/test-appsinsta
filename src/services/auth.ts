@@ -1,4 +1,5 @@
 import { initializeApp } from 'firebase/app';
+import { ref } from 'vue';
 import {
   getAuth,
   createUserWithEmailAndPassword,
@@ -7,7 +8,6 @@ import {
   onAuthStateChanged,
   User,
 } from 'firebase/auth';
-import { getFirestore, doc, setDoc, getDoc } from 'firebase/firestore';
 
 // Firebase configuration
 const firebaseConfig = {
@@ -22,7 +22,6 @@ const firebaseConfig = {
 // Initialize Firebase
 const app = initializeApp(firebaseConfig);
 export const auth = getAuth(app);
-export const db = getFirestore(app);
 
 export type AuthUser = {
   id: string;
@@ -30,6 +29,8 @@ export type AuthUser = {
   fullName: string;
   username: string;
 };
+
+export const mappedUser = ref<AuthUser | null>(null);
 
 export type RegisterPayload = {
   email: string;
@@ -43,41 +44,24 @@ export type LoginPayload = {
   password: string;
 };
 
-// Create user profile in Firestore
-const createUserProfile = async (
-  user: User,
-  payload: RegisterPayload
-): Promise<void> => {
-  const userRef = doc(db, 'users', user.uid);
-  await setDoc(userRef, {
-    uid: user.uid,
-    email: user.email,
-    fullName: payload.fullName,
-    username: payload.username.toLowerCase(),
-    createdAt: new Date(),
-  });
+const emailPrefix = (email: string): string => {
+  const prefix = email.split('@')[0]?.trim();
+  return prefix || 'user';
 };
 
-// Get user profile from Firestore
-const getUserProfile = async (uid: string): Promise<AuthUser | null> => {
-  try {
-    const userRef = doc(db, 'users', uid);
-    const userSnap = await getDoc(userRef);
+const mapAuthUser = (
+  user: User,
+  override?: Partial<Pick<AuthUser, 'fullName' | 'username'>>
+): AuthUser => {
+  const email = user.email || '';
+  const baseName = emailPrefix(email);
 
-    if (userSnap.exists()) {
-      const data = userSnap.data();
-      return {
-        id: uid,
-        email: data.email,
-        fullName: data.fullName,
-        username: data.username,
-      };
-    }
-    return null;
-  } catch (error) {
-    console.error('Error fetching user profile:', error);
-    return null;
-  }
+  return {
+    id: user.uid,
+    email,
+    fullName: override?.fullName?.trim() || user.displayName || baseName,
+    username: override?.username?.trim().toLowerCase() || baseName.toLowerCase(),
+  };
 };
 
 export const register = async (
@@ -89,19 +73,14 @@ export const register = async (
       payload.email.trim(),
       payload.password
     );
-
-    // await createUserProfile(userCredential.user, payload);
-
-    // const authUser: AuthUser = {
-    //   id: userCredential.user.uid,
-    //   email: userCredential.user.email || '',
-    //   fullName: payload.fullName,
-    //   username: payload.username.toLowerCase(),
-    // };
+    const authUser = mapAuthUser(userCredential.user, {
+      fullName: payload.fullName,
+      username: payload.username,
+    });
 
     await signOut(auth);
-
-    // return { user: authUser };
+    mappedUser.value = null;
+    return { user: authUser };
   } catch (error: any) {
     const errorCode = error.code;
     let errorMessage = 'Pendaftaran gagal';
@@ -127,13 +106,10 @@ export const login = async (
       payload.email.trim(),
       payload.password
     );
+    const authUser = mapAuthUser(userCredential.user);
+    mappedUser.value = authUser;
 
-    // const userProfile = await getUserProfile(userCredential.user.uid);
-    // if (!userProfile) {
-    //   throw new Error('Profil pengguna tidak ditemukan');
-    // }
-
-    // return { user: userProfile };
+    return { user: authUser };
   } catch (error: any) {
     const errorCode = error.code;
     let errorMessage = 'Login gagal';
@@ -153,20 +129,25 @@ export const login = async (
 export const getCurrentUser = async (): Promise<AuthUser | null> => {
   const user = auth.currentUser;
   if (!user) {
+    mappedUser.value = null;
     return null;
   }
 
-  return getUserProfile(user.uid);
+  const authUser = mapAuthUser(user);
+  mappedUser.value = authUser;
+  return authUser;
 };
 
 export const logout = async (): Promise<void> => {
   await signOut(auth);
+  mappedUser.value = null;
 };
 
 export const isAuthenticated = async (): Promise<boolean> => {
   return new Promise((resolve) => {
     const unsubscribe = onAuthStateChanged(auth, (user) => {
       unsubscribe();
+      mappedUser.value = user ? mapAuthUser(user) : null;
       resolve(!!user);
     });
   });

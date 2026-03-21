@@ -36,18 +36,18 @@
 import { computed, ref, watch } from 'vue';
 import { IonItem, IonAvatar, IonLabel, IonButton, IonIcon } from '@ionic/vue';
 import { ellipsisHorizontal, heartOutline, heart, chatbubbleOutline, paperPlaneOutline } from 'ionicons/icons';
+import { getDeterministicAvatar, getDeterministicPostImage } from '@/services/avatar';
 
 const props = defineProps<{ post: any }>();
 
 const hasLiked = ref(props.post.hasLiked);
 const likes = ref(props.post.likes);
-const fallbackAvatar = ref(`https://i.pravatar.cc/150?img=${Math.floor(Math.random() * 70) + 1}`);
 
-const getRandomPostImage = (seed: number | string) => `https://picsum.photos/seed/${seed}/800/800`;
-
-const avatarSrc = computed(() => props.post.userImage?.trim() || fallbackAvatar.value);
+const avatarSrc = computed(() =>
+  props.post.userImage?.trim() || getDeterministicAvatar(props.post.username || 'user')
+);
 const postImageSrc = computed(() =>
-  props.post.postImage?.trim() || getRandomPostImage(`home-post-${props.post.id}`)
+  props.post.postImage?.trim() || getDeterministicPostImage(`post-${props.post.id}`)
 );
 
 watch(
@@ -66,7 +66,7 @@ const handleLike = () => {
 
 const onAvatarError = (event: Event) => {
   const image = event.target as HTMLImageElement;
-  image.src = fallbackAvatar.value;
+  image.src = getDeterministicAvatar(props.post.username || 'user');
 };
 
 const onPostImageError = (event: Event) => {
@@ -76,7 +76,7 @@ const onPostImageError = (event: Event) => {
   }
 
   image.dataset.fallbackApplied = 'true';
-  image.src = getRandomPostImage(`fallback-${props.post.id}-${Date.now()}`);
+  image.src = getDeterministicPostImage(`post-${props.post.id}`);
 };
 </script>
 

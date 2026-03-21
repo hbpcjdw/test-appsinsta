@@ -51,7 +51,7 @@
 </template>
 
 <script setup lang="ts">
-import { computed, ref } from 'vue';
+import { computed, onMounted, ref } from 'vue';
 import { useRouter } from 'vue-router';
 import {
   IonPage,
@@ -67,6 +67,8 @@ import {
   toastController,
 } from '@ionic/vue';
 import { addPost } from '@/services/data';
+import { getCurrentUser, mappedUser } from '@/services/auth';
+import { getDeterministicAvatar } from '@/services/avatar';
 
 const router = useRouter();
 
@@ -75,8 +77,26 @@ const imageUrl = ref('');
 const uploadedImage = ref('');
 const isSubmitting = ref(false);
 const fileInputRef = ref<HTMLInputElement | null>(null);
+const postUsername = ref('you');
+const postUserImage = ref(getDeterministicAvatar(postUsername.value));
 
 const previewImage = computed(() => uploadedImage.value || imageUrl.value.trim());
+
+onMounted(async () => {
+  const currentUser = mappedUser.value || (await getCurrentUser());
+  if (currentUser) {
+    postUsername.value = currentUser.username;
+    postUserImage.value = getDeterministicAvatar(currentUser.username);
+  }
+});
+
+const resolvePostAuthor = async () => {
+  const currentUser = mappedUser.value || (await getCurrentUser());
+  if (currentUser) {
+    postUsername.value = currentUser.username;
+    postUserImage.value = getDeterministicAvatar(currentUser.username);
+  }
+};
 
 const openFilePicker = () => {
   fileInputRef.value?.click();
@@ -111,11 +131,13 @@ const submitPost = async () => {
   isSubmitting.value = true;
 
   try {
+    await resolvePostAuthor();
+
     addPost({
       caption: caption.value,
       postImage: uploadedImage.value || imageUrl.value,
-      username: 'herlambang_dev',
-      userImage: 'https://i.pravatar.cc/150?u=herlambang_dev',
+      username: postUsername.value,
+      userImage: postUserImage.value,
       location: 'Indonesia',
     });
 
