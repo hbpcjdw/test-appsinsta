@@ -22,6 +22,12 @@
 
 ## 🔧 Instalasi
 
+pengguna dapat mengikuti langkah-langkah berikut untuk menjalankan aplikasi ini secara lokal:
+
+PENTING:
+env dapat diambil dari link drive pada folder 
+"Technical Test_Bagian 2_pertanyaan 2"
+
 1. Clone repository:
 ```bash
 git clone <repository-url>
@@ -42,12 +48,12 @@ npm install -g @ionic/cli
 
 Untuk development:
 ```bash
-ionic serve
+npm run dev
 ```
 
 Untuk build production:
 ```bash
-ionic build
+npm run build
 ```
 
 Untuk test di device/emulator:
