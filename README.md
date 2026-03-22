@@ -15,7 +15,7 @@
 > 🚀 Built with **Ionic 8 + Vue** — A pixel-perfect Instagram Clone experience.
 ## 🌐 Demo
 
-Kunjungi DEMO aplikasi PWA secara online: [https://test-appsinsta.vercel.app/login](https://test-appsinsta.vercel.app/login)
+Kunjungi DEMO aplikasi PWA secara online: [https://test-appsinsta.vercel.app/](https://test-appsinsta.vercel.app/)
 
 ## 📱 Demo APK
 
