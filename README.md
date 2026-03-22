@@ -4,15 +4,23 @@
 
 <div align="center">
 
-<img src="assets/screenshots/ss3.jpg" height="500em"/>&nbsp;
-<img src="assets/screenshots/ss6.jpg" height="500em"/>&nbsp;
-<img src="assets/screenshots/ss9.jpg" height="500em"/>&nbsp;
+<img src="assets/screenshots/ss1.jpeg" height="500em"/>&nbsp;
+<img src="assets/screenshots/ss2.jpeg" height="500em"/>&nbsp;
+<img src="assets/screenshots/ss3.jpeg" height="500em"/>&nbsp;
 
 </div>
 
 ---
 
 > 🚀 Built with **Ionic 8 + Vue** — A pixel-perfect Instagram Clone experience.
+## 🌐 Demo
+
+Kunjungi DEMO aplikasi PWA secara online: [https://test-appsinsta.vercel.app/login](https://test-appsinsta.vercel.app/login)
+
+## 📱 Demo APK
+
+Download dan test APK build tersedia di folder drive "Technical Test_Bagian 2_pertanyaan 2"
+
 
 ## 📋 Spesifikasi Minimum
 
