@@ -8,6 +8,7 @@ import ActivityPage from '../views/ActivityPage.vue';
 import ProfilePage from '../views/ProfilePage.vue';
 import LoginPage from '../views/LoginPage.vue';
 import RegisterPage from '../views/RegisterPage.vue';
+import BantuanPage from '../views/BantuanPage.vue';
 import { auth } from '@/services/auth';
 import { onAuthStateChanged } from 'firebase/auth';
 
@@ -61,6 +62,11 @@ const routes: Array<RouteRecordRaw> = [
         path: 'profile',
         name: 'Profile',
         component: ProfilePage
+      },
+      {
+        path: 'bantuan',
+        name: 'Bantuan',
+        component: BantuanPage
       }
     ]
   }

@@ -7,7 +7,7 @@
           <ion-button>
             <ion-icon :icon="addCircleOutline" />
           </ion-button>
-          <ion-button>
+          <ion-button @click="router.push('/tabs/bantuan')">
             <ion-icon :icon="menuOutline" />
           </ion-button>
         </ion-buttons>
@@ -108,6 +108,7 @@ import {
   alertController,
 } from '@ionic/vue';
 import { addCircleOutline, gridOutline, menuOutline, personOutline } from 'ionicons/icons';
+
 import { DUMMY_DATA } from '@/services/data';
 import { getCurrentUser, mappedUser, logout, type AuthUser } from '@/services/auth';
 import { getDeterministicAvatar, getDeterministicPostImage } from '@/services/avatar';
